@@ -47,7 +47,6 @@ public class WatchResumeTest {
     @Test
     public void testWatchOnPut() throws Exception {
         try (Client client = TestUtil.client(cluster).build()) {
-            try (KV kvClient2 = TestUtil.client(cluster).build().getKVClient()) {
                 Watch watchClient = client.getWatchClient();
                 KV kvClient = client.getKVClient();
 
@@ -58,16 +57,14 @@ public class WatchResumeTest {
                 try (Watcher watcher = watchClient.watch(key, ref::set, (t) -> t.printStackTrace() )) {
                     cluster.restart();
 
-                    kvClient2.put(key, value).get();
-                    System.out.println("Key: "+ key + ", Value:" + ref.get());
-                    System.out.println("Key: "+ key + ", Value:" + kvClient2.get(key).get().getKvs().get(0).getValue());
+                    kvClient.put(key, value).get();
                     await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> assertThat(ref.get()).isNotNull());
 
                     assertThat(ref.get().getEvents().size()).isEqualTo(1);
                     assertThat(ref.get().getEvents().get(0).getEventType()).isEqualTo(EventType.PUT);
                     assertThat(ref.get().getEvents().get(0).getKeyValue().getKey()).isEqualTo(key);
                 }
-            }
         }
     }
 }
+
